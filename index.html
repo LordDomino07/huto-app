@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hűtő & Fagyasztó Rendszerező (Felhős)</title>
+    <style>
+        :root {
+            --primary-fridge: #2563eb;
+            --primary-freezer: #0284c7;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --success: #10b981;
+            --border: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding-bottom: 30px;
+        }
+
+        header {
+            background: linear-gradient(135deg, #1e40af, #0369a1);
+            color: white;
+            padding: 20px 15px;
+            text-align: center;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+
+        header h1 {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+
+        .cloud-bar {
+            background: #e0f2fe;
+            padding: 10px 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 0.85rem;
+            border-bottom: 1px solid #bae6fd;
+        }
+
+        .cloud-inputs {
+            display: flex;
+            gap: 8px;
+        }
+
+        .cloud-inputs input {
+            flex: 1;
+            padding: 6px 10px;
+            border: 1px solid #93c5fd;
+            border-radius: 6px;
+            font-size: 0.85rem;
+        }
+
+        .cloud-btn {
+            background: #0284c7;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .storage-toggle {
+            display: flex;
+            background: #e2e8f0;
+            margin: 15px;
+            border-radius: 12px;
+            padding: 4px;
+        }
+
+        .toggle-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            background: transparent;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: var(--text-muted);
+        }
+
+        .toggle-btn.active-fridge {
+            background: var(--primary-fridge);
+            color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .toggle-btn.active-freezer {
+            background: var(--primary-freezer);
+            color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .container {
+            padding: 0 15px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .btn-add {
+            flex: 2;
+            background-color: #10b981;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-sync {
+            flex: 1;
+            background-color: #f59e0b;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 1rem;
+            margin-bottom: 15px;
+        }
+
+        .item-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .item-info h3 {
+            font-size: 1.1rem;
+            margin-bottom: 4px;
+        }
+
+        .item-meta {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        .badge-safe { background: #d1fae5; color: #065f46; }
+        .badge-warning { background: #fef3c7; color: #92400e; }
+        .badge-danger { background: #fee2e2; color: #991b1b; }
+
+        .item-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-icon {
+            background: #f1f5f9;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        .btn-recipe { background: #fef3c7; color: #b45309; }
+        .btn-delete { background: #fee2e2; color: #b91c1c; }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+            padding: 15px;
+            z-index: 100;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 450px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-buttons button {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .btn-save { background: var(--primary-fridge); color: white; }
+        .btn-cancel { background: #e2e8f0; color: var(--text-main); }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🧊 Hűtő & Fagyasztó Rendszerező</h1>
+        <p>Azonnali Felhő Szinkronizációval</p>
+    </header>
+
+    <div class="cloud-bar">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <strong id="cloudStatus">☁️ Felhő Állapot: Helyi módban</strong>
+        </div>
+        <div class="cloud-inputs">
+            <input type="text" id="familyKey" placeholder="Családi Kód (pl. kovacs-huto-123)">
+            <button class="cloud-btn" onclick="connectCloud()">Kapcsolódás</button>
+        </div>
+    </div>
+
+    <div class="storage-toggle">
+        <button id="fridgeTab" class="toggle-btn active-fridge" onclick="switchStorage('fridge')">🥦 Hűtő</button>
+        <button id="freezerTab" class="toggle-btn" onclick="switchStorage('freezer')">❄️ Fagyasztó</button>
+    </div>
+
+    <div class="container">
+        <div class="actions">
+            <button class="btn-add" onclick="openModal()">➕ Új Elem</button>
+            <button class="btn-sync" onclick="fetchFromCloud()">🔄 Frissítés</button>
+        </div>
+
+        <input type="text" id="searchInput" class="search-box" placeholder="Keresés az elemek között..." oninput="renderItems()">
+
+        <div id="itemList"></div>
+    </div>
+
+    <!-- Modal Form -->
+    <div id="itemModal" class="modal">
+        <div class="modal-content">
+            <h2>Új Elem Hozzáadása</h2>
+            <form id="itemForm" onsubmit="saveItem(event)">
+                <div class="form-group">
+                    <label>Megnevezés *</label>
+                    <input type="text" id="itemName" placeholder="pl. Darált hús, Kakas, Hal" required oninput="autoCalculateExpiry()">
+                </div>
+                <div class="form-group">
+                    <label>Tároló</label>
+                    <select id="itemStorage" onchange="autoCalculateExpiry()">
+                        <option value="fridge">Hűtő</option>
+                        <option value="freezer">Fagyasztó</option>
+                    </select>
+                </div>
+                <div class="form-group" style="display: flex; gap: 10px;">
+                    <div style="flex: 2;">
+                        <label>Mennyiség</label>
+                        <input type="number" id="itemQty" step="0.1" value="1" required>
+                    </div>
+                    <div style="flex: 1;">
+                        <label>Egység</label>
+                        <select id="itemUnit">
+                            <option value="db">db</option>
+                            <option value="kg">kg</option>
+                            <option value="dkg">dkg</option>
+                            <option value="csomag">csomag</option>
+                            <option value="szelet">szelet</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Lejárati dátum (Automatikus / Opcionális)</label>
+                    <input type="date" id="itemExpiry">
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn-cancel" onclick="closeModal()">Mégse</button>
+                    <button type="submit" class="btn-save">Hozzáadás</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Recipe Modal -->
+    <div id="recipeModal" class="modal">
+        <div class="modal-content">
+            <h2 id="recipeTitle" style="margin-bottom: 10px;">🍳 Receptek</h2>
+            <p id="recipeSub" style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 15px;"></p>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <a id="cookpadLink" href="#" target="_blank" style="padding: 10px; background: #ff6b6b; color: white; text-align: center; border-radius: 8px; text-decoration: none; font-weight: bold;">Keresés a Cookpad-en 🍲</a>
+                <a id="mindmegetteLink" href="#" target="_blank" style="padding: 10px; background: #e67e22; color: white; text-align: center; border-radius: 8px; text-decoration: none; font-weight: bold;">Keresés a Mindmegette-n 🍳</a>
+            </div>
+            <div class="modal-buttons" style="margin-top: 15px;">
+                <button type="button" class="btn-cancel" onclick="closeRecipeModal()">Bezárás</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let items = JSON.parse(localStorage.getItem('my_inventory') || '[]');
+        let currentStorage = 'fridge';
+        let familyCode = localStorage.getItem('family_code') || '';
+
+        const expiryDb = {
+            'kakas': { fridge: 2, freezer: 365 },
+            'szárnyas': { fridge: 2, freezer: 270 },
+            'hal': { fridge: 2, freezer: 180 },
+            'darált hús': { fridge: 2, freezer: 90 },
+            'karaj': { fridge: 3, freezer: 240 },
+            'sertés': { fridge: 3, freezer: 240 },
+            'marha': { fridge: 4, freezer: 300 },
+            'zöldség': { fridge: 7, freezer: 300 }
+        };
+
+        if (items.length === 0) {
+            items = [
+                { id: 1, name: 'Darált hús', storage: 'freezer', qty: 0.5, unit: 'kg', expiry: getFutureDate(90) },
+                { id: 2, name: 'Sertéskaraj', storage: 'freezer', qty: 5, unit: 'szelet', expiry: getFutureDate(180) }
+            ];
+            saveLocal();
+        }
+
+        window.onload = function() {
+            if (familyCode) {
+                document.getElementById('familyKey').value = familyCode;
+                document.getElementById('cloudStatus').innerText = '☁️ Felhő Állapot: Csatlakozva (' + familyCode + ')';
+                fetchFromCloud();
+            } else {
+                renderItems();
+            }
+        };
+
+        function getFutureDate(days) {
+            const d = new Date();
+            d.setDate(d.getDate() + days);
+            return d.toISOString().split('T')[0];
+        }
+
+        // --- FELHŐ SZINKRONIZÁCIÓ (JSONBIN.IO MÓDSZER) ---
+        async function connectCloud() {
+            const inputKey = document.getElementById('familyKey').value.trim();
+            if (!inputKey) {
+                alert('Kérlek, adj meg egy tetszőleges családi kódot (pl. kovacs-huto)!');
+                return;
+            }
+            familyCode = inputKey;
+            localStorage.setItem('family_code', familyCode);
+            document.getElementById('cloudStatus').innerText = '☁️ Felhő Állapot: Csatlakozva (' + familyCode + ')';
+            
+            // Első kapcsolódáskor letöltjük vagy feltöltjük az adatokat
+            await fetchFromCloud();
+        }
+
+        async function saveToCloud() {
+            if (!familyCode) return;
+            try {
+                // Ingyenes felhőtároló endpoint
+                await fetch(`https://api.jsonbin.io/v3/b`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Bin-Name': familyCode,
+                        'X-Private': 'false'
+                    },
+                    body: JSON.stringify(items)
+                });
+            } catch (err) {
+                console.log('Felhő mentési háttér hiba:', err);
+            }
+        }
+
+        async function fetchFromCloud() {
+            if (!familyCode) {
+                renderItems();
+                return;
+            }
+            try {
+                document.getElementById('cloudStatus').innerText = '🔄 Frissítés a felhőből...';
+                // Lekérjük a családi kódhoz tartozó legfrissebb adatokat
+                const res = await fetch(`https://api.jsonbin.io/v3/b?name=${familyCode}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.length > 0 && data[0].record) {
+                        items = data[0].record;
+                        saveLocal();
+                    }
+                }
+                document.getElementById('cloudStatus').innerText = '☁️ Felhő Állapot: Csatlakozva (' + familyCode + ')';
+            } catch (err) {
+                console.log('Felhő letöltési hiba, helyi adatok használata:', err);
+                document.getElementById('cloudStatus').innerText = '☁️ Offine / Helyi nézet';
+            }
+            renderItems();
+        }
+
+        // --- ALAP ALKALMAZÁS LOGIKA ---
+        function switchStorage(storage) {
+            currentStorage = storage;
+            document.getElementById('fridgeTab').className = storage === 'fridge' ? 'toggle-btn active-fridge' : 'toggle-btn';
+            document.getElementById('freezerTab').className = storage === 'freezer' ? 'toggle-btn active-freezer' : 'toggle-btn';
+            renderItems();
+        }
+
+        function renderItems() {
+            const list = document.getElementById('itemList');
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            
+            const filtered = items.filter(item => 
+                item.storage === currentStorage && 
+                item.name.toLowerCase().includes(search)
+            );
+
+            if (filtered.length === 0) {
+                list.innerHTML = `<p style="text-align: center; color: var(--text-muted); margin-top: 30px;">Nincs elem ebben a tárolóban.</p>`;
+                return;
+            }
+
+            list.innerHTML = filtered.map(item => {
+                let badgeHtml = '';
+                if (item.expiry) {
+                    const today = new Date();
+                    const exp = new Date(item.expiry);
+                    const diffDays = Math.ceil((exp - today) / (1000 * 60 * 60 * 24));
+
+                    if (diffDays < 0) {
+                        badgeHtml = `<span class="badge badge-danger">Lejárt (${item.expiry})</span>`;
+                    } else if (diffDays <= 3) {
+                        badgeHtml = `<span class="badge badge-warning">Hamarosan lejár (${diffDays} nap)</span>`;
+                    } else {
+                        badgeHtml = `<span class="badge badge-safe">Lejár: ${item.expiry}</span>`;
+                    }
+                }
+
+                return `
+                    <div class="item-card">
+                        <div class="item-info">
+                            <h3>${item.name}</h3>
+                            <div class="item-meta">${item.qty} ${item.unit}</div>
+                            ${badgeHtml}
+                        </div>
+                        <div class="item-actions">
+                            <button class="btn-icon btn-recipe" onclick="openRecipe('${item.name}')">🍳 Recept</button>
+                            <button class="btn-icon btn-delete" onclick="deleteItem(${item.id})">🗑️</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function autoCalculateExpiry() {
+            const name = document.getElementById('itemName').value.toLowerCase().trim();
+            const storage = document.getElementById('itemStorage').value;
+            const expiryInput = document.getElementById('itemExpiry');
+
+            for (let key in expiryDb) {
+                if (name.includes(key)) {
+                    const days = expiryDb[key][storage];
+                    expiryInput.value = getFutureDate(days);
+                    return;
+                }
+            }
+        }
+
+        function openModal() {
+            document.getElementById('itemStorage').value = currentStorage;
+            document.getElementById('itemModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('itemModal').style.display = 'none';
+            document.getElementById('itemForm').reset();
+        }
+
+        async function saveItem(e) {
+            e.preventDefault();
+            const newItem = {
+                id: Date.now(),
+                name: document.getElementById('itemName').value,
+                storage: document.getElementById('itemStorage').value,
+                qty: parseFloat(document.getElementById('itemQty').value),
+                unit: document.getElementById('itemUnit').value,
+                expiry: document.getElementById('itemExpiry').value || null
+            };
+            items.push(newItem);
+            saveLocal();
+            closeModal();
+            renderItems();
+            await saveToCloud();
+        }
+
+        async function deleteItem(id) {
+            items = items.filter(item => item.id !== id);
+            saveLocal();
+            renderItems();
+            await saveToCloud();
+        }
+
+        function saveLocal() {
+            localStorage.setItem('my_inventory', JSON.stringify(items));
+        }
+
+        function openRecipe(name) {
+            document.getElementById('recipeTitle').innerText = `🍳 Receptek: ${name}`;
+            document.getElementById('recipeSub').innerText = `Keresés a legnépszerűbb magyar oldalakon:`;
+            document.getElementById('cookpadLink').href = `https://cookpad.com/hu/kereses/${encodeURIComponent(name)}`;
+            document.getElementById('mindmegetteLink').href = `https://www.mindmegette.hu/kereses/${encodeURIComponent(name)}`;
+            document.getElementById('recipeModal').style.display = 'flex';
+        }
+
+        function closeRecipeModal() {
+            document.getElementById('recipeModal').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
