@@ -157,7 +157,7 @@
     <script>
         let items = JSON.parse(localStorage.getItem('my_inventory') || '[]');
         let currentStorage = 'fridge';
-        let familyName = localStorage.getItem('family_name') || '';
+        let familyName = localStorage.getItem('family_name') || 'Torma-Balogh';
 
         const expiryDb = {
             'kakas': { fridge: 2, freezer: 365 },
@@ -171,13 +171,11 @@
         };
 
         window.onload = function() {
-            if (familyName) {
-                document.getElementById('familyNameInput').value = familyName;
-                document.getElementById('cloudStatus').innerText = '☁️ Csatlakozva: ' + familyName;
-                fetchFromCloud();
-            } else {
-                renderItems();
-            }
+            // Beállítjuk alapból a Torma-Balogh nevet, hogy ne kelljen kézzel beírni sem
+            if (!familyName) familyName = 'Torma-Balogh';
+            document.getElementById('familyNameInput').value = familyName;
+            document.getElementById('cloudStatus').innerText = '☁️ Csatlakozva: ' + familyName;
+            fetchFromCloud();
         };
 
         function getFutureDate(days) {
@@ -198,10 +196,14 @@
             await fetchFromCloud();
         }
 
+        // Itt fixen egyetlen dedikált kulcsot használunk a Torma-Balogh családhoz
+        function getBinKey() {
+            return 'huto_torma_balogh_csalad_v1';
+        }
+
         async function saveToCloud() {
-            if (!familyName) return;
             try {
-                const binKey = 'huto_' + btoa(unescape(encodeURIComponent(familyName))).replace(/=/g, '');
+                const binKey = getBinKey();
                 const getRes = await fetch(`https://api.jsonbin.io/v3/b?name=${binKey}`);
                 if (getRes.ok) {
                     const listData = await getRes.json();
@@ -223,10 +225,9 @@
         }
 
         async function fetchFromCloud() {
-            if (!familyName) { renderItems(); return; }
             try {
-                document.getElementById('cloudStatus').innerText = '🔄 Frissítés...';
-                const binKey = 'huto_' + btoa(unescape(encodeURIComponent(familyName))).replace(/=/g, '');
+                document.getElementById('cloudStatus').innerText = '🔄 Frissítés a közös felhőből...';
+                const binKey = getBinKey();
                 const res = await fetch(`https://api.jsonbin.io/v3/b?name=${binKey}`);
                 if (res.ok) {
                     const data = await res.json();
@@ -235,7 +236,7 @@
                         localStorage.setItem('my_inventory', JSON.stringify(items));
                     }
                 }
-                document.getElementById('cloudStatus').innerText = '☁️ Csatlakozva: ' + familyName;
+                document.getElementById('cloudStatus').innerText = '☁️ Csatlakozva: ' + (familyName || 'Torma-Balogh');
             } catch (err) {
                 document.getElementById('cloudStatus').innerText = '☁️ Csatlakozva (Helyi)';
             }
@@ -312,11 +313,11 @@
             e.preventDefault();
             items.push({
                 id: Date.now(),
-                name: document.getElementById('itemName').value,
-                storage: document.getElementById('itemStorage').value,
-                qty: parseFloat(document.getElementById('itemQty').value),
-                unit: document.getElementById('itemUnit').value,
-                expiry: document.getElementById('itemExpiry').value || null
+                name: document.getElementById('itemName'].value,
+                storage: document.getElementById('itemStorage'].value,
+                qty: parseFloat(document.getElementById('itemQty'].value),
+                unit: document.getElementById('itemUnit'].value,
+                expiry: document.getElementById('itemExpiry'].value || null
             });
             localStorage.setItem('my_inventory', JSON.stringify(items));
             closeModal();
