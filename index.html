@@ -203,7 +203,6 @@
             try {
                 const binKey = 'huto_' + btoa(unescape(encodeURIComponent(familyName))).replace(/=/g, '');
                 
-                // Először megpróbáljuk frissíteni, ha létezik
                 const getRes = await fetch(`https://api.jsonbin.io/v3/b?name=${binKey}`);
                 if (getRes.ok) {
                     const listData = await getRes.json();
@@ -218,7 +217,6 @@
                     }
                 }
 
-                // Ha még nem létezik, újat hozunk létre
                 await fetch(`https://api.jsonbin.io/v3/b`, {
                     method: 'POST',
                     headers: {
@@ -327,7 +325,7 @@
             const newItem = {
                 id: Date.now(),
                 name: document.getElementById('itemName').value,
-                storage: document.getElementById('itemStorage'].value,
+                storage: document.getElementById('itemStorage').value,
                 qty: parseFloat(document.getElementById('itemQty').value),
                 unit: document.getElementById('itemUnit').value,
                 expiry: document.getElementById('itemExpiry').value || null
