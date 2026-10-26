@@ -72,11 +72,11 @@
 
     <div class="cloud-bar">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-            <strong id="cloudStatus">☁️ Csatlakozásra vár</strong>
+            <strong id="cloudStatus">☁️ Csatlakozva: Torma-Balogh</strong>
         </div>
         <div class="cloud-inputs">
-            <input type="text" id="familyNameInput" placeholder="Családi Név (pl. Torma-Balogh)">
-            <button class="cloud-btn" onclick="connectCloud()">Csatlakozás</button>
+            <input type="text" id="familyNameInput" value="Torma-Balogh" placeholder="Családi Név">
+            <button class="cloud-btn" onclick="connectCloud()">Mentés</button>
         </div>
     </div>
 
@@ -157,7 +157,7 @@
     <script>
         let items = JSON.parse(localStorage.getItem('my_inventory') || '[]');
         let currentStorage = 'fridge';
-        let familyName = localStorage.getItem('family_name') || 'Torma-Balogh';
+        let familyName = 'Torma-Balogh';
 
         const expiryDb = {
             'kakas': { fridge: 2, freezer: 365 },
@@ -171,10 +171,7 @@
         };
 
         window.onload = function() {
-            // Beállítjuk alapból a Torma-Balogh nevet, hogy ne kelljen kézzel beírni sem
-            if (!familyName) familyName = 'Torma-Balogh';
             document.getElementById('familyNameInput').value = familyName;
-            document.getElementById('cloudStatus').innerText = '☁️ Csatlakozva: ' + familyName;
             fetchFromCloud();
         };
 
@@ -184,19 +181,14 @@
             return d.toISOString().split('T')[0];
         }
 
-        async function connectCloud() {
+        function connectCloud() {
             const inputVal = document.getElementById('familyNameInput').value.trim();
-            if (!inputVal) {
-                alert('Kérlek, adj meg egy családi nevet!');
-                return;
+            if (inputVal) {
+                familyName = inputVal;
             }
-            familyName = inputVal;
-            localStorage.setItem('family_name', familyName);
-            document.getElementById('cloudStatus').innerText = '☁️ Csatlakozva: ' + familyName;
-            await fetchFromCloud();
+            fetchFromCloud();
         }
 
-        // Itt fixen egyetlen dedikált kulcsot használunk a Torma-Balogh családhoz
         function getBinKey() {
             return 'huto_torma_balogh_csalad_v1';
         }
@@ -236,7 +228,7 @@
                         localStorage.setItem('my_inventory', JSON.stringify(items));
                     }
                 }
-                document.getElementById('cloudStatus').innerText = '☁️ Csatlakozva: ' + (familyName || 'Torma-Balogh');
+                document.getElementById('cloudStatus').innerText = '☁️ Csatlakozva: ' + familyName;
             } catch (err) {
                 document.getElementById('cloudStatus').innerText = '☁️ Csatlakozva (Helyi)';
             }
@@ -313,11 +305,11 @@
             e.preventDefault();
             items.push({
                 id: Date.now(),
-                name: document.getElementById('itemName'].value,
-                storage: document.getElementById('itemStorage'].value,
-                qty: parseFloat(document.getElementById('itemQty'].value),
-                unit: document.getElementById('itemUnit'].value,
-                expiry: document.getElementById('itemExpiry'].value || null
+                name: document.getElementById('itemName').value,
+                storage: document.getElementById('itemStorage').value,
+                qty: parseFloat(document.getElementById('itemQty').value),
+                unit: document.getElementById('itemUnit').value,
+                expiry: document.getElementById('itemExpiry').value || null
             });
             localStorage.setItem('my_inventory', JSON.stringify(items));
             closeModal();
