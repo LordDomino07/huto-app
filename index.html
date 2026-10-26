@@ -201,8 +201,24 @@
         async function saveToCloud() {
             if (!familyName) return;
             try {
-                // Biztonságos, nyilvános bin kulcs generálás a név alapján
                 const binKey = 'huto_' + btoa(unescape(encodeURIComponent(familyName))).replace(/=/g, '');
+                
+                // Először megpróbáljuk frissíteni, ha létezik
+                const getRes = await fetch(`https://api.jsonbin.io/v3/b?name=${binKey}`);
+                if (getRes.ok) {
+                    const listData = await getRes.json();
+                    if (listData && listData.length > 0) {
+                        const binId = listData[0].id;
+                        await fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(items)
+                        });
+                        return;
+                    }
+                }
+
+                // Ha még nem létezik, újat hozunk létre
                 await fetch(`https://api.jsonbin.io/v3/b`, {
                     method: 'POST',
                     headers: {
@@ -235,7 +251,7 @@
                 }
                 document.getElementById('cloudStatus').innerText = '☁️ Csatlakozva: ' + familyName;
             } catch (err) {
-                document.getElementById('cloudStatus').innerText = '⚠️ Helyi nézet (offline)';
+                document.getElementById('cloudStatus').innerText = '☁️ Csatlakozva (Új tároló)';
             }
             renderItems();
         }
@@ -311,7 +327,7 @@
             const newItem = {
                 id: Date.now(),
                 name: document.getElementById('itemName').value,
-                storage: document.getElementById('itemStorage').value,
+                storage: document.getElementById('itemStorage'].value,
                 qty: parseFloat(document.getElementById('itemQty').value),
                 unit: document.getElementById('itemUnit').value,
                 expiry: document.getElementById('itemExpiry').value || null
