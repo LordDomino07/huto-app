@@ -150,7 +150,6 @@
 
         let items = JSON.parse(localStorage.getItem('my_inventory') || '[]');
         let currentStorage = 'fridge';
-        let isSaving = false;
 
         const expiryDb = {
             'kakas': { fridge: 2, freezer: 365 },
@@ -174,7 +173,6 @@
         }
 
         async function saveToCloud() {
-            isSaving = true;
             try {
                 await fetch(NPOINT_URL, {
                     method: 'PUT',
@@ -184,19 +182,23 @@
             } catch (err) { 
                 console.log(err); 
             }
-            isSaving = false;
         }
 
         async function fetchFromCloud() {
-            if (isSaving) return; // Ha épp mentés zajlik, ne frissítsen rá üresen
-
             try {
                 document.getElementById('cloudStatus').innerText = '🔄 Szinkronizálás...';
                 const res = await fetch(NPOINT_URL);
                 if (res.ok) {
                     const data = await res.json();
                     if (Array.isArray(data)) {
-                        items = data;
+                        // Okos összefésülés: ha a felhőben vannak adatok, de nálunk is, 
+                        // vagy ha a felhő üres de nálunk van elem, ne írja felül üressel!
+                        if (data.length > 0) {
+                            items = data;
+                        } else if (items.length > 0) {
+                            // Ha a felhő üres, de a gépben/telefonban van adat, akkor azonnal feltöltjük a felhőbe!
+                            await saveToCloud();
+                        }
                         localStorage.setItem('my_inventory', JSON.stringify(items));
                     }
                 }
