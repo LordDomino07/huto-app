@@ -23,10 +23,7 @@
         header { background: linear-gradient(135deg, #1e40af, #0369a1); color: white; padding: 20px 15px; text-align: center; }
         header h1 { font-size: 1.5rem; margin-bottom: 5px; }
 
-        .cloud-bar { background: #e0f2fe; padding: 10px 15px; display: flex; flex-direction: column; gap: 8px; font-size: 0.85rem; border-bottom: 1px solid #bae6fd; }
-        .cloud-inputs { display: flex; gap: 8px; }
-        .cloud-inputs input { flex: 1; padding: 8px 10px; border: 1px solid #93c5fd; border-radius: 6px; font-size: 0.9rem; }
-        .cloud-btn { background: #0284c7; color: white; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .cloud-bar { background: #e0f2fe; padding: 10px 15px; text-align: center; font-size: 0.9rem; border-bottom: 1px solid #bae6fd; font-weight: bold; color: #0369a1; }
 
         .storage-toggle { display: flex; background: #e2e8f0; margin: 15px; border-radius: 12px; padding: 4px; }
         .toggle-btn { flex: 1; padding: 12px; border: none; background: transparent; font-size: 1rem; font-weight: bold; border-radius: 8px; cursor: pointer; color: var(--text-muted); }
@@ -67,17 +64,11 @@
 
     <header>
         <h1>🧊 Hűtő & Fagyasztó Rendszerező</h1>
-        <p>Közös Családi Felhő</p>
+        <p>Családi Felhő</p>
     </header>
 
-    <div class="cloud-bar">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <strong id="cloudStatus">☁️ Csatlakozva: Torma-Balogh</strong>
-        </div>
-        <div class="cloud-inputs">
-            <input type="text" id="familyNameInput" value="Torma-Balogh" placeholder="Családi Név">
-            <button class="cloud-btn" onclick="connectCloud()">Mentés</button>
-        </div>
+    <div class="cloud-bar" id="cloudStatus">
+        ☁️ Csatlakozás a közös felhőhöz...
     </div>
 
     <div class="storage-toggle">
@@ -155,9 +146,12 @@
     </div>
 
     <script>
+        // A te fix, beállított npoint linked:
+        const NPOINT_URL = 'https://api.npoint.io/5134e7a94f4651f22a24';
+
         let items = JSON.parse(localStorage.getItem('my_inventory') || '[]');
         let currentStorage = 'fridge';
-        let familyName = 'Torma-Balogh';
+        let lastSyncTime = 0;
 
         const expiryDb = {
             'kakas': { fridge: 2, freezer: 365 },
@@ -171,7 +165,6 @@
         };
 
         window.onload = function() {
-            document.getElementById('familyNameInput').value = familyName;
             fetchFromCloud();
         };
 
@@ -181,56 +174,41 @@
             return d.toISOString().split('T')[0];
         }
 
-        function connectCloud() {
-            const inputVal = document.getElementById('familyNameInput').value.trim();
-            if (inputVal) {
-                familyName = inputVal;
-            }
-            fetchFromCloud();
-        }
-
-        function getBinKey() {
-            return 'huto_torma_balogh_csalad_v1';
-        }
-
         async function saveToCloud() {
             try {
-                const binKey = getBinKey();
-                const getRes = await fetch(`https://api.jsonbin.io/v3/b?name=${binKey}`);
-                if (getRes.ok) {
-                    const listData = await getRes.json();
-                    if (listData && listData.length > 0) {
-                        await fetch(`https://api.jsonbin.io/v3/b/${listData[0].id}`, {
-                            method: 'PUT',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(items)
-                        });
-                        return;
-                    }
-                }
-                await fetch(`https://api.jsonbin.io/v3/b`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-Bin-Name': binKey, 'X-Private': 'false' },
+                await fetch(NPOINT_URL, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(items)
                 });
             } catch (err) { console.log(err); }
         }
 
         async function fetchFromCloud() {
+            const now = Date.now();
+            if (now - lastSyncTime < 3000) {
+                renderItems();
+                return;
+            }
+            lastSyncTime = now;
+
             try {
-                document.getElementById('cloudStatus').innerText = '🔄 Frissítés a közös felhőből...';
-                const binKey = getBinKey();
-                const res = await fetch(`https://api.jsonbin.io/v3/b?name=${binKey}`);
+                document.getElementById('cloudStatus').innerText = '🔄 Szinkronizálás...';
+                const res = await fetch(NPOINT_URL);
+                if (res.status === 429) {
+                    document.getElementById('cloudStatus').innerText = '⚠️ Túl sok kérés, kérlek várj egy picit!';
+                    return;
+                }
                 if (res.ok) {
                     const data = await res.json();
-                    if (data && data.length > 0 && data[0].record) {
-                        items = data[0].record;
+                    if (Array.isArray(data)) {
+                        items = data;
                         localStorage.setItem('my_inventory', JSON.stringify(items));
                     }
                 }
-                document.getElementById('cloudStatus').innerText = '☁️ Csatlakozva: ' + familyName;
+                document.getElementById('cloudStatus').innerText = '☁️ Csatlakozva a közös felhőhöz';
             } catch (err) {
-                document.getElementById('cloudStatus').innerText = '☁️ Csatlakozva (Helyi)';
+                document.getElementById('cloudStatus').innerText = '☁️ Csatlakozva (Helyi mód)';
             }
             renderItems();
         }
