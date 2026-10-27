@@ -68,7 +68,7 @@
     </header>
 
     <div class="cloud-bar" id="cloudStatus">
-        ☁️ Csatlakozás a közös felhőhöz...
+        ☁️ Csatlakozva a közös felhőhöz...
     </div>
 
     <div class="storage-toggle">
@@ -146,12 +146,11 @@
     </div>
 
     <script>
-        // A te fix, beállított npoint linked:
         const NPOINT_URL = 'https://api.npoint.io/5134e7a94f4651f22a24';
 
         let items = JSON.parse(localStorage.getItem('my_inventory') || '[]');
         let currentStorage = 'fridge';
-        let lastSyncTime = 0;
+        let isSaving = false;
 
         const expiryDb = {
             'kakas': { fridge: 2, freezer: 365 },
@@ -175,30 +174,25 @@
         }
 
         async function saveToCloud() {
+            isSaving = true;
             try {
                 await fetch(NPOINT_URL, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(items)
                 });
-            } catch (err) { console.log(err); }
+            } catch (err) { 
+                console.log(err); 
+            }
+            isSaving = false;
         }
 
         async function fetchFromCloud() {
-            const now = Date.now();
-            if (now - lastSyncTime < 3000) {
-                renderItems();
-                return;
-            }
-            lastSyncTime = now;
+            if (isSaving) return; // Ha épp mentés zajlik, ne frissítsen rá üresen
 
             try {
                 document.getElementById('cloudStatus').innerText = '🔄 Szinkronizálás...';
                 const res = await fetch(NPOINT_URL);
-                if (res.status === 429) {
-                    document.getElementById('cloudStatus').innerText = '⚠️ Túl sok kérés, kérlek várj egy picit!';
-                    return;
-                }
                 if (res.ok) {
                     const data = await res.json();
                     if (Array.isArray(data)) {
